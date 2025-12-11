@@ -1,18 +1,22 @@
-from google import genai
+from openai import OpenAI
 import asyncio
 import logging
+import os
+from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.methods import DeleteWebhook
 from aiogram.types import Message
 
-api_key = "AIzaSyDsajaQzNUeY1tnEdm2jIaYbW84rNlSs34" # API плюч Gemini
-model = "gemini-2.5-flash" # Модель Gemini
+load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY")
+model = "gpt-5-nano" 
 system_instruction = "You are a Python programmer bot. Help the user with Python code."
 
-client = genai.Client(api_key=api_key)
+client = OpenAI(api_key=api_key)
 
-TOKEN = '8508851859:AAHPEeJEp0WUAeodaX40FOJnT7JUQakVwy0' # ⁡⁢⁡⁢⁣⁣ПОМЕНЯЙТЕ ТОКЕН БОТА НА ВАШ⁡
+TOKEN = os.getenv("BOT_TOKEN") # ⁡⁢⁡⁢⁣⁣ПОМЕНЯЙТЕ ТОКЕН БОТА НА ВАШ⁡
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(TOKEN)
@@ -28,14 +32,14 @@ async def cmd_start(message: types.Message):
 # ⁡⁢⁣⁣ОБРАБОТЧИК ЛЮБОГО ТЕКСТОВОГО СООБЩЕНИЯ⁡
 @dp.message(lambda message: message.text)
 async def filter_messages(message: Message):
-    response = client.models.generate_content(
+    response = client.chat.completions.create(
         model=model,
-        contents=message.text,
-        config=genai.types.GenerateContentConfig(
-            system_instruction=system_instruction
-        )
+        messages=[
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": message.text}
+        ]
     )
-    await message.answer(response.text, parse_mode="Markdown")
+    await message.answer(response.choices[0].message.content, parse_mode="Markdown")
 
 async def main():
     await bot(DeleteWebhook(drop_pending_updates=True))
